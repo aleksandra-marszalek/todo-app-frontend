@@ -1,8 +1,18 @@
-import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function AuthPage() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/todos', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -11,7 +21,6 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   
   const { login, register } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
