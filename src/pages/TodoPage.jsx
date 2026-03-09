@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { todoAPI } from '../services/api';
 import TodoItem from '../components/TodoItem';
 import TodoForm from '../components/TodoForm';
-import TodoSkeleton from '../components/TodoSkeleton';  // ← Import skeleton
+import TodoSkeleton from '../components/TodoSkeleton';
+import ConfirmDialog from '../components/ConfirmDialog';  // ← Import
 import toast from 'react-hot-toast';
 import { TOAST_MESSAGES } from '../constants/messages';
 
@@ -12,6 +13,12 @@ function TodoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user, logout } = useAuth();
+  
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    todoId: null,
+  });
 
   // Sort function
   const sortTodos = (todoList) => {
@@ -77,10 +84,25 @@ function TodoPage() {
     }
   };
 
-  const handleDelete = async (id) => {
+  // Show confirmation dialog
+  const handleDeleteClick = (id) => {
+    setConfirmDialog({
+      isOpen: true,
+      todoId: id,
+    });
+  };
+
+  // User confirmed deletion
+  const handleDeleteConfirm = async () => {
+    const { todoId } = confirmDialog;
+    
+    // Close dialog first
+    setConfirmDialog({ isOpen: false, todoId: null });
+
+    // Perform delete
     try {
-      await todoAPI.delete(id);
-      setTodos(todos.filter((todo) => todo.id !== id));
+      await todoAPI.delete(todoId);
+      setTodos(todos.filter((todo) => todo.id !== todoId));
       
       toast.success(
         TOAST_MESSAGES.TODO_DELETED.message,
@@ -92,6 +114,11 @@ function TodoPage() {
         TOAST_MESSAGES.TODO_DELETE_ERROR.options
       );
     }
+  };
+
+  // User cancelled deletion
+  const handleDeleteCancel = () => {
+    setConfirmDialog({ isOpen: false, todoId: null });
   };
 
   const handleToggle = async (id) => {
@@ -125,7 +152,6 @@ function TodoPage() {
     }
   };
 
-  // Stats calculation
   const totalTodos = todos.length;
   const completedTodos = todos.filter((t) => t.completed).length;
   const remainingTodos = totalTodos - completedTodos;
@@ -174,34 +200,30 @@ function TodoPage() {
 
         {/* Add Todo Form */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Add New Todo</h2>
           <TodoForm onAdd={handleAdd} />
         </div>
 
-        {/* Todo List with Skeleton Loading */}
+        {/* Todo List */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           {loading ? (
-            // Skeleton screens while loading
             <div>
               <TodoSkeleton />
               <TodoSkeleton />
               <TodoSkeleton />
             </div>
           ) : todos.length === 0 ? (
-            // Empty state
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg mb-2">No todos yet!</p>
               <p className="text-gray-400">Add your first task above</p>
             </div>
           ) : (
-            // Actual todos
             <div>
               {todos.map((todo) => (
                 <TodoItem
                   key={todo.id}
                   todo={todo}
                   onUpdate={handleUpdate}
-                  onDelete={handleDelete}
+                  onDelete={handleDeleteClick} 
                   onToggle={handleToggle}
                 />
               ))}
@@ -209,6 +231,15 @@ function TodoPage() {
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        title="Delete Todo"
+        message="Are you sure you want to delete this todo? This action cannot be undone."
+      />
     </div>
   );
 }
