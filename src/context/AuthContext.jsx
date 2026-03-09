@@ -32,11 +32,25 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify({ username: userName, email }));
       
       return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Login failed' 
-      };
+    } catch (err) {
+      if (err.response?.status === 401) {
+        return { 
+          success: false, 
+          error: err.response.data.error || 'Invalid username or password' 
+        };
+      }
+      else if (err.response?.data?.error) {
+        return { 
+          success: false, 
+          error: err.response.data.error 
+        };
+      }
+      else {
+        return { 
+          success: false, 
+          error: 'Login failed. Please check your connection.' 
+        };
+      }
     }
   };
 
@@ -52,11 +66,34 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify({ username: userName, email: userEmail }));
       
       return { success: true };
-    } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
-      };
+    } catch (err) {
+      if (err.response?.status === 409) {
+        return { 
+          success: false, 
+          error: err.response.data.error || 'Username or email already taken' 
+        };
+      }
+      // Handle 400 Bad Request (validation errors)
+      else if (err.response?.status === 400) {
+        return { 
+          success: false, 
+          error: err.response.data.error || 'Invalid registration data' 
+        };
+      }
+      // Handle other backend errors
+      else if (err.response?.data?.error) {
+        return { 
+          success: false, 
+          error: err.response.data.error 
+        };
+      }
+      // Handle network errors
+      else {
+        return { 
+          success: false, 
+          error: 'Registration failed. Please try again.' 
+        };
+      }
     }
   };
 
