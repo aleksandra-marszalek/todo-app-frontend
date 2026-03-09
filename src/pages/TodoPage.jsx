@@ -15,11 +15,20 @@ function TodoPage() {
     loadTodos();
   }, []);
 
+  const sortTodos = (todoList) => {
+  return [...todoList].sort((a, b) => {
+    if (a.completed !== b.completed) {
+      return a.completed ? 1 : -1;
+    }
+    return b.id - a.id;
+  });
+};
+
   const loadTodos = async () => {
     try {
       setLoading(true);
       const response = await todoAPI.getAll();
-      setTodos(response.data);
+      setTodos(sortTodos(response.data));
       setError('');
     } catch (err) {
       setError('Failed to load todos');
@@ -32,7 +41,7 @@ function TodoPage() {
   const handleAdd = async (newTodo) => {
     try {
       const response = await todoAPI.create(newTodo);
-      setTodos([response.data, ...todos]);
+      setTodos(sortTodos([response.data, ...todos]));
     } catch (err) {
       setError('Failed to add todo');
       console.error(err);
@@ -42,7 +51,7 @@ function TodoPage() {
   const handleUpdate = async (id, updatedTodo) => {
     try {
       const response = await todoAPI.update(id, updatedTodo);
-      setTodos(todos.map((todo) => (todo.id === id ? response.data : todo)));
+      setTodos(sortTodos(todos.map((todo) => (todo.id === id ? response.data : todo))));
     } catch (err) {
       setError('Failed to update todo');
       console.error(err);
