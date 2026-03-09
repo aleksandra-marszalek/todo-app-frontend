@@ -1,28 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { todoAPI } from '../services/api';
-import TodoForm from '../components/TodoForm';
 import TodoItem from '../components/TodoItem';
+import TodoForm from '../components/TodoForm';
+import TodoSkeleton from '../components/TodoSkeleton';  // ← Import skeleton
+import toast from 'react-hot-toast';
+import { TOAST_MESSAGES } from '../constants/messages';
 
 function TodoPage() {
-  const { user, logout } = useAuth();
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { user, logout } = useAuth();
 
-  // Load todos on mount
+  // Sort function
+  const sortTodos = (todoList) => {
+    return [...todoList].sort((a, b) => {
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      return b.id - a.id;
+    });
+  };
+
   useEffect(() => {
     loadTodos();
   }, []);
-
-  const sortTodos = (todoList) => {
-  return [...todoList].sort((a, b) => {
-    if (a.completed !== b.completed) {
-      return a.completed ? 1 : -1;
-    }
-    return b.id - a.id;
-  });
-};
 
   const loadTodos = async () => {
     try {
@@ -31,8 +34,7 @@ function TodoPage() {
       setTodos(sortTodos(response.data));
       setError('');
     } catch (err) {
-      setError('Failed to load todos');
-      console.error(err);
+      setError(TOAST_MESSAGES.TODO_LOAD_ERROR.message);
     } finally {
       setLoading(false);
     }
@@ -41,81 +43,129 @@ function TodoPage() {
   const handleAdd = async (newTodo) => {
     try {
       const response = await todoAPI.create(newTodo);
-      setTodos(sortTodos([response.data, ...todos]));
+      setTodos(sortTodos([...todos, response.data]));
+      
+      toast.success(
+        TOAST_MESSAGES.TODO_ADDED.message,
+        TOAST_MESSAGES.TODO_ADDED.options
+      );
     } catch (err) {
-      setError('Failed to add todo');
-      console.error(err);
+      toast.error(
+        TOAST_MESSAGES.TODO_ADD_ERROR.message,
+        TOAST_MESSAGES.TODO_ADD_ERROR.options
+      );
     }
   };
 
   const handleUpdate = async (id, updatedTodo) => {
     try {
       const response = await todoAPI.update(id, updatedTodo);
-      setTodos(sortTodos(todos.map((todo) => (todo.id === id ? response.data : todo))));
+      const updatedTodos = todos.map((todo) =>
+        todo.id === id ? response.data : todo
+      );
+      setTodos(sortTodos(updatedTodos));
+      
+      toast.success(
+        TOAST_MESSAGES.TODO_UPDATED.message,
+        TOAST_MESSAGES.TODO_UPDATED.options
+      );
     } catch (err) {
-      setError('Failed to update todo');
-      console.error(err);
+      toast.error(
+        TOAST_MESSAGES.TODO_UPDATE_ERROR.message,
+        TOAST_MESSAGES.TODO_UPDATE_ERROR.options
+      );
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this todo?')) return;
-
     try {
       await todoAPI.delete(id);
       setTodos(todos.filter((todo) => todo.id !== id));
+      
+      toast.success(
+        TOAST_MESSAGES.TODO_DELETED.message,
+        TOAST_MESSAGES.TODO_DELETED.options
+      );
     } catch (err) {
-      setError('Failed to delete todo');
-      console.error(err);
+      toast.error(
+        TOAST_MESSAGES.TODO_DELETE_ERROR.message,
+        TOAST_MESSAGES.TODO_DELETE_ERROR.options
+      );
     }
   };
 
-  const completedCount = todos.filter((t) => t.completed).length;
-  const totalCount = todos.length;
+  const handleToggle = async (id) => {
+    const todo = todos.find((t) => t.id === id);
+    try {
+      const response = await todoAPI.update(id, {
+        ...todo,
+        completed: !todo.completed,
+      });
+      const updatedTodos = todos.map((t) =>
+        t.id === id ? response.data : t
+      );
+      setTodos(sortTodos(updatedTodos));
+      
+      if (!todo.completed) {
+        toast.success(
+          TOAST_MESSAGES.TODO_COMPLETED.message,
+          TOAST_MESSAGES.TODO_COMPLETED.options
+        );
+      } else {
+        toast.success(
+          TOAST_MESSAGES.TODO_INCOMPLETE.message,
+          TOAST_MESSAGES.TODO_INCOMPLETE.options
+        );
+      }
+    } catch (err) {
+      toast.error(
+        TOAST_MESSAGES.TODO_UPDATE_ERROR.message,
+        TOAST_MESSAGES.TODO_UPDATE_ERROR.options
+      );
+    }
+  };
+
+  // Stats calculation
+  const totalTodos = todos.length;
+  const completedTodos = todos.filter((t) => t.completed).length;
+  const remainingTodos = totalTodos - completedTodos;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">My Todos</h1>
-              <p className="text-sm text-gray-600">Welcome back, {user?.username}!</p>
-            </div>
-            <button
-              onClick={logout}
-              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
+      <div className="bg-white shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">My Todos</h1>
+            <p className="text-gray-600">Welcome back, {user?.username}!</p>
           </div>
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          >
+            Logout
+          </button>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="flex justify-around text-center">
-            <div>
-              <div className="text-3xl font-bold text-blue-500">{totalCount}</div>
-              <div className="text-sm text-gray-600">Total Tasks</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-green-500">{completedCount}</div>
-              <div className="text-sm text-gray-600">Completed</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-orange-500">
-                {totalCount - completedCount}
-              </div>
-              <div className="text-sm text-gray-600">Remaining</div>
-            </div>
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <div className="text-4xl font-bold text-blue-500">{totalTodos}</div>
+            <div className="text-gray-600 mt-2">Total Tasks</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <div className="text-4xl font-bold text-green-500">{completedTodos}</div>
+            <div className="text-gray-600 mt-2">Completed</div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm p-6 text-center">
+            <div className="text-4xl font-bold text-orange-500">{remainingTodos}</div>
+            <div className="text-gray-600 mt-2">Remaining</div>
           </div>
         </div>
 
-        {/* Error Message */}
+        {/* Error */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -123,36 +173,41 @@ function TodoPage() {
         )}
 
         {/* Add Todo Form */}
-        <TodoForm onAdd={handleAdd} />
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+          <h2 className="text-xl font-semibold mb-4">Add New Todo</h2>
+          <TodoForm onAdd={handleAdd} />
+        </div>
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="text-gray-500">Loading todos...</div>
-          </div>
-        )}
-
-        {/* Todo List */}
-        {!loading && todos.length === 0 && (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <div className="text-gray-400 text-lg">No todos yet!</div>
-            <div className="text-gray-500 text-sm mt-2">Add your first task above</div>
-          </div>
-        )}
-
-        {!loading && todos.length > 0 && (
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-3">Your Tasks</h2>
-            {todos.map((todo) => (
-              <TodoItem
-                key={todo.id}
-                todo={todo}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
+        {/* Todo List with Skeleton Loading */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          {loading ? (
+            // Skeleton screens while loading
+            <div>
+              <TodoSkeleton />
+              <TodoSkeleton />
+              <TodoSkeleton />
+            </div>
+          ) : todos.length === 0 ? (
+            // Empty state
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg mb-2">No todos yet!</p>
+              <p className="text-gray-400">Add your first task above</p>
+            </div>
+          ) : (
+            // Actual todos
+            <div>
+              {todos.map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  onToggle={handleToggle}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
+import toast from 'react-hot-toast';
+import { isTokenExpired } from '../utils/jwt';
+import { TOAST_MESSAGES } from '../constants/messages';
 
 const AuthContext = createContext(null);
 
@@ -12,43 +15,65 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
+
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      if (isTokenExpired(savedToken)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        toast.error(
+          TOAST_MESSAGES.SESSION_EXPIRED.message,
+          TOAST_MESSAGES.SESSION_EXPIRED.options
+        );
+      } else {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+      }
     }
+
     setLoading(false);
+  }, []);
+
+  // Listen for auto logout from interceptor
+  useEffect(() => {
+    const handleAutoLogout = () => {
+      setToken(null);
+      setUser(null);
+    };
+
+    window.addEventListener('autoLogout', handleAutoLogout);
+
+    return () => {
+      window.removeEventListener('autoLogout', handleAutoLogout);
+    };
   }, []);
 
   const login = async (username, password) => {
     try {
       const response = await authAPI.login(username, password);
       const { token, username: userName, email } = response.data;
-      
+
       setToken(token);
       setUser({ username: userName, email });
-      
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify({ username: userName, email }));
-      
+
       return { success: true };
     } catch (err) {
       if (err.response?.status === 401) {
-        return { 
-          success: false, 
-          error: err.response.data.error || 'Invalid username or password' 
+        return {
+          success: false,
+          error: err.response.data.error || 'Invalid username or password'
         };
-      }
-      else if (err.response?.data?.error) {
-        return { 
-          success: false, 
-          error: err.response.data.error 
+      } else if (err.response?.data?.error) {
+        return {
+          success: false,
+          error: err.response.data.error
         };
-      }
-      else {
-        return { 
-          success: false, 
-          error: 'Login failed. Please check your connection.' 
+      } else {
+        return {
+          success: false,
+          error: 'Login failed. Please check your connection.'
         };
       }
     }
@@ -58,40 +83,34 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.register(username, email, password);
       const { token, username: userName, email: userEmail } = response.data;
-      
+
       setToken(token);
       setUser({ username: userName, email: userEmail });
-      
+
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify({ username: userName, email: userEmail }));
-      
+
       return { success: true };
     } catch (err) {
       if (err.response?.status === 409) {
-        return { 
-          success: false, 
-          error: err.response.data.error || 'Username or email already taken' 
+        return {
+          success: false,
+          error: err.response.data.error || 'Username or email already taken'
         };
-      }
-      // Handle 400 Bad Request (validation errors)
-      else if (err.response?.status === 400) {
-        return { 
-          success: false, 
-          error: err.response.data.error || 'Invalid registration data' 
+      } else if (err.response?.status === 400) {
+        return {
+          success: false,
+          error: err.response.data.error || 'Invalid registration data'
         };
-      }
-      // Handle other backend errors
-      else if (err.response?.data?.error) {
-        return { 
-          success: false, 
-          error: err.response.data.error 
+      } else if (err.response?.data?.error) {
+        return {
+          success: false,
+          error: err.response.data.error
         };
-      }
-      // Handle network errors
-      else {
-        return { 
-          success: false, 
-          error: 'Registration failed. Please try again.' 
+      } else {
+        return {
+          success: false,
+          error: 'Registration failed. Please try again.'
         };
       }
     }
