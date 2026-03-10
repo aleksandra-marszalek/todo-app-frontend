@@ -2,6 +2,9 @@
 
 A modern, responsive Todo application built with React and Tailwind CSS. Features JWT authentication, real-time updates, and a clean user interface.
 
+![Todo App Demo](docs/demo-desktop-small.gif)
+![Todo App Demo-Mobile](docs/demo-mobile-small.gif)
+
 **Live Demo**: https://todo-app-frontend-silk-one.vercel.app  
 **Backend API**: https://todo-app-production-218b.up.railway.app
 
@@ -204,6 +207,10 @@ Todos are sorted client-side for instant feedback:
 - Efficient re-renders with React state updates
 - Tailwind CSS purges unused styles in production
 - Static asset caching via Vercel CDN
+
+## Observability
+Using built-in dashboards from Vercel.
+![Dashboards View](docs/observability.png)
 
 ## Future Enhancements
 - Due dates and reminders
