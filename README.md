@@ -35,13 +35,14 @@ A modern, responsive Todo application built with React and Tailwind CSS. Feature
 
 ## Tech Stack
 
-- **React 18** - Modern React with hooks and functional components
-- **Vite** - Next-generation frontend build tool (fast HMR)
+- **React 19** - Modern React with hooks and functional components
+- **Vite 7** - Next-generation frontend build tool (fast HMR)
 - **Tailwind CSS v3** - Utility-first CSS framework
-- **React Router v6** - Declarative routing for React
+- **React Router v7** - Declarative routing for React
 - **Axios** - HTTP client with request/response interceptors
 - **React Hot Toast** - Beautiful toast notifications
 - **React Context API** - Global state management for authentication
+- **Vitest** - Unit testing with @testing-library/react
 
 ## Prerequisites
 
@@ -90,27 +91,42 @@ npm run preview
 
 # Lint code
 npm run lint
+
+# Run tests (watch mode)
+npm run test
+
+# Run tests once
+npm run test:run
 ```
 
 ## Project Structure
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── TodoItem.jsx    # Individual todo item with edit/delete
-│   ├── TodoForm.jsx    # Form to add new todos
-│   └── ProtectedRoute.jsx  # Route guard for authentication
-├── context/            # React Context for global state
-│   └── AuthContext.jsx # Authentication state and methods
-├── pages/              # Route-level page components
-│   ├── AuthPage.jsx    # Login/Register page
-│   └── TodoPage.jsx    # Main todo list page
-├── services/           # External service integrations
-│   └── api.js         # Axios instance with interceptors
-├── routes/            # Route configuration
-│   └── index.jsx      # App routes definition
-├── App.jsx            # Root component with providers
-└── main.jsx           # Application entry point
+├── components/              # Reusable UI components
+│   ├── TodoItem.jsx        # Individual todo item with edit/delete
+│   ├── TodoForm.jsx        # Form to add new todos
+│   ├── ConfirmDialog.jsx   # Confirmation modal for destructive actions
+│   └── TodoSkeleton.jsx    # Loading skeleton for todo list
+├── context/                # React Context for global state
+│   ├── AuthContext.js      # Bare context object (createContext)
+│   ├── AuthProvider.jsx    # Provider with login/register/logout logic
+│   └── useAuth.js          # useAuth hook
+├── pages/                  # Route-level page components
+│   ├── AuthPage.jsx        # Login/Register page
+│   └── TodoPage.jsx        # Main todo list page
+├── services/               # External service integrations
+│   └── api.js              # Axios instance with interceptors
+├── utils/                  # Pure utility functions
+│   ├── jwt.js              # isTokenExpired helper
+│   └── toast.js            # showSuccess/showError wrappers
+├── constants/              # App-wide constants
+│   ├── messages.js         # Toast and auth error messages
+│   └── storage.js          # localStorage key constants
+├── test/                   # Test setup
+│   └── setup.js            # @testing-library/jest-dom setup
+├── App.jsx                 # Root component with providers
+└── main.jsx                # Application entry point
 ```
 
 ## Key Implementation Details
@@ -152,19 +168,11 @@ api.interceptors.response.use(
 
 ### State Management
 
-**Authentication state managed via React Context:**
+**Authentication state managed via React Context, split across three files to satisfy react-refresh rules:**
 
-```javascript
-const AuthContext = createContext();
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  
-  // Login, register, logout methods
-  // Persist to localStorage
-};
-```
+- `AuthContext.js` — bare `createContext()` export
+- `AuthProvider.jsx` — provider component with login/register/logout logic and localStorage persistence
+- `useAuth.js` — `useAuth` hook for consuming context in components
 
 **Todo state managed locally in TodoPage (no global state needed):**
 
@@ -200,6 +208,18 @@ Todos are sorted client-side for instant feedback:
 | PUT | `/todos/:id` | Update todo |
 | DELETE | `/todos/:id` | Delete todo |
 
+
+## Testing
+
+```bash
+# Run tests in watch mode
+npm run test
+
+# Run tests once (CI)
+npm run test:run
+```
+
+Tests cover utils (`jwt.js`, `toast.js`) and components (`TodoItem`, `TodoForm`, `ConfirmDialog`) using Vitest and @testing-library/react.
 
 ## Performance Optimizations
 - Vite for fast development and optimized builds
