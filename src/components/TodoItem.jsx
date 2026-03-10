@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-function TodoItem({ todo, onUpdate, onDelete }) {
+function TodoItem({ todo, onUpdate, onDelete, onToggle }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
   const [editDescription, setEditDescription] = useState(todo.description || '');
@@ -14,40 +14,33 @@ function TodoItem({ todo, onUpdate, onDelete }) {
     setIsEditing(false);
   };
 
-  const handleToggleComplete = () => {
-    onUpdate(todo.id, {
-      ...todo,
-      completed: !todo.completed,
-    });
-  };
-
   if (isEditing) {
     return (
-      <div className="bg-white rounded-lg shadow p-4 mb-3">
+      <div className="border-b last:border-0 py-3">
         <input
           type="text"
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
-          className="w-full px-3 py-2 border rounded mb-2 focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border rounded mb-2 focus:ring-2 focus:ring-blue-500 text-sm"
           placeholder="Title"
         />
         <textarea
           value={editDescription}
           onChange={(e) => setEditDescription(e.target.value)}
-          className="w-full px-3 py-2 border rounded mb-3 focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border rounded mb-2 focus:ring-2 focus:ring-blue-500 text-sm"
           placeholder="Description"
           rows="2"
         />
         <div className="flex gap-2">
           <button
             onClick={handleSave}
-            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            className="bg-green-500 text-white px-3 py-1.5 rounded hover:bg-green-600 text-sm"
           >
             Save
           </button>
           <button
             onClick={() => setIsEditing(false)}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            className="bg-gray-500 text-white px-3 py-1.5 rounded hover:bg-gray-600 text-sm"
           >
             Cancel
           </button>
@@ -57,17 +50,17 @@ function TodoItem({ todo, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-3 hover:shadow-md transition">
-      <div className="flex items-start gap-3">
+    <div className="border-b last:border-0 py-3 hover:bg-gray-50 transition">
+      <div className="flex items-start gap-2 sm:gap-3">
         <input
           type="checkbox"
           checked={todo.completed}
-          onChange={handleToggleComplete}
-          className="mt-1 h-5 w-5 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
+          onChange={() => onToggle(todo.id)}
+          className="mt-0.5 h-4 w-4 sm:h-5 sm:w-5 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
         />
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h3
-            className={`text-lg font-semibold ${
+            className={`text-base sm:text-lg font-semibold ${
               todo.completed ? 'line-through text-gray-400' : 'text-gray-800'
             }`}
           >
@@ -75,7 +68,7 @@ function TodoItem({ todo, onUpdate, onDelete }) {
           </h3>
           {todo.description && (
             <p
-              className={`text-sm mt-1 ${
+              className={`text-sm sm:text-base mt-0.5 ${
                 todo.completed ? 'text-gray-300' : 'text-gray-600'
               }`}
             >
@@ -83,16 +76,16 @@ function TodoItem({ todo, onUpdate, onDelete }) {
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <button
             onClick={() => setIsEditing(true)}
-            className="text-blue-500 hover:text-blue-600 px-3 py-1 rounded hover:bg-blue-50"
+            className="text-blue-500 hover:text-blue-600 px-2 py-1 rounded hover:bg-blue-50 text-sm sm:text-base"
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(todo.id)}
-            className="text-red-500 hover:text-red-600 px-3 py-1 rounded hover:bg-red-50"
+            className="text-red-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 text-sm sm:text-base"
           >
             Delete
           </button>
