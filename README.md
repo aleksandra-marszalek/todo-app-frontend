@@ -5,8 +5,7 @@ A modern, responsive Todo application built with React and Tailwind CSS. Feature
 ![Todo App Demo](docs/demo-desktop-small.gif)
 ![Todo App Demo-Mobile](docs/demo-mobile-small.gif)
 
-**Live Demo**: https://todo-app-frontend-silk-one.vercel.app  
-**Backend API**: https://todo-app-production-218b.up.railway.app
+**Status**: the hosted demo (Vercel frontend + Railway backend) has been retired to save hosting costs. The recordings above show the app in action, and it runs locally against the backend (see below).
 
 ## Features
 
